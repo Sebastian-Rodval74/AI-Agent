@@ -3,13 +3,24 @@ from google.genai import types
 
 def get_files_info(working_directory, directory=None):
     try:
-        full_path = os.path.join(working_directory, directory) 
-        full_path = os.path.abspath(full_path)
 
-        if not full_path.startswith(os.path.abspath(working_directory)):
-            return f'Error:"{directory}" is not a directory'
+
+        normalized_dir = directory.strip().lower() if isinstance(directory, str) else directory
+
+        if normalized_dir in (None, "", ".", "calculator"):
+            full_path = os.path.abspath(working_directory)
+        else:
+            full_path = os.path.abspath(os.path.join(working_directory, directory))
+
+
+
+        working_abs = os.path.abspath(working_directory)
+        if os.path.commonpath([working_abs, full_path]) != working_abs:
+            return f'Error: Access outside of working directory is not allowed: \"{directory}\"'
+
         if not os.path.exists(full_path) or not os.path.isdir(full_path):
-            return f'Error: "{directory}" is not a directory'
+            return f'Error: \"{directory}\" is not a directory'
+
         contents = []
         for item in os.listdir(full_path):
             item_path = os.path.join(full_path, item)
@@ -20,7 +31,6 @@ def get_files_info(working_directory, directory=None):
         return '\n'.join(contents)
     except Exception as e:
         return f'Error: {str(e)}'
-
 schema_get_files_info = types.FunctionDeclaration(
     name="get_files_info",
     description="Lists files in the specified directory along with their sizes, constrained to the working directory.",
